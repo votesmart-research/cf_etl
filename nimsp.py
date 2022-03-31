@@ -1,4 +1,3 @@
-from pg8000 import JSON
 import requests
 import json
 import pandas
