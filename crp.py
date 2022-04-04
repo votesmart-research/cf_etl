@@ -208,6 +208,8 @@ def main():
 
     query_tool.query = (entered_crp_query,)
 
+    verify(matched_df, query_tool, 'CID')
+
     entered_fec_query = \
         '''
         SELECT code, candidate_id
@@ -218,7 +220,6 @@ def main():
 
     query_tool.query = (entered_fec_query,)
 
-    verify(matched_df, query_tool, 'CID')
     verify(matched_df, query_tool, 'FECCandID')
     
     ## Verified and Matched DataFrame
