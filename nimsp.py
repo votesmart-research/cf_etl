@@ -267,7 +267,7 @@ def extract(nimsp_api, nimsp_json, json_files=[], extract_path='~/NIMSP_JSON'):
     api_last_update = nimsp_json.last_updated
 
     pbar = tqdm(total=nimsp_json.max_page + 1)
-    extracted        = []
+    extracted = []
 
     for json_file in json_files:
 
@@ -316,10 +316,10 @@ def model(df):
     """
 
     suffix = r'\b(?P<suffix>[IVX][IVX]+$|[DJMS][RS][S]?[\.]?$)'
+    lastname = lambda x: re.sub(f"{suffix}|\(.*\)", "", x) if x else ""
     middlename = r'\b(?P<middlename>[A-Z]{1}$)\b'
     nickname = r'[\"\'\(](?P<nickname>.*?)[\"\'\)]'
-    lastname = lambda x: re.sub(f"{suffix}|\(.*\)", "", x)
-    firstname = lambda x: re.sub(f"{middlename}|{nickname}", "", x)
+    firstname = lambda x: re.sub(f"{middlename}|{nickname}", "", x) if x else ""
     office = r'(?P<office>.*(?= DISTRICT)|.*(?!= DISTRICT))'
     district = r'(?P<district>(?<=DISTRICT ).+)'
     
