@@ -180,7 +180,7 @@ class NIMSPApi:
     Office: c-r-oc
     Candidate: c-t-id
     Political_Party: c-t-p ; eg. 1(Democratic), 2(Republican), 3(Third-Party), 4(NonPartisan)
-    Career Summary: c-t-eid (NIMSP ID)
+    Candidate_Entity: c-t-eid (NIMSP ID)
     Type_of_Office: c-r-ot ; eg. G(Gubernatorial), U(US House), L(US Senate)
     Incumbency_Status: c-t-ico ; eg. I(Incumbent), O(Open)
     """
@@ -201,7 +201,7 @@ class NIMSPApi:
         self.url = "https://api.followthemoney.org"
         self.__params = {'APIKey': api_key,
                         'mode': 'json',
-                        'gro': 'c-t-eid',
+                        'gro': 'c-t-id',
                         'y': year,
                         'so': 's,c-r-oc',
                         'sod': 1,
@@ -242,7 +242,7 @@ class NIMSPApi:
             return r.json()
 
 
-def extract(nimsp_api, nimsp_json, json_files=[], extract_path='~/NIMSP_Extract'):
+def extract(nimsp_api, nimsp_json, json_files=[], extract_path='~/NIMSP_JSON'):
 
     """
     Performs the extraction process by reading files or pulling data from API
@@ -267,7 +267,7 @@ def extract(nimsp_api, nimsp_json, json_files=[], extract_path='~/NIMSP_Extract'
     api_last_update = nimsp_json.last_updated
 
     pbar = tqdm(total=nimsp_json.max_page + 1)
-    extracted = []
+    extracted        = []
 
     for json_file in json_files:
 
@@ -284,7 +284,7 @@ def extract(nimsp_api, nimsp_json, json_files=[], extract_path='~/NIMSP_Extract'
         extracted += nimsp_json.extract(to_remove=['request', 'Candidate', 'record_id'])
         pbar.update(1)
 
-    if nimsp_json != api_last_update:
+    if nimsp_json.last_updated != api_last_update:
         return extracted, nimsp_json.last_updated
 
     while nimsp_json.current_page <= nimsp_json.max_page:
@@ -389,6 +389,8 @@ def match(nimsp_df, election_candidates_df):
 
     pandas_matcher.columns_to_match.pop('NIMSP_ID')
 
+    pandas_matcher.column_groups.append('state_id')
+
     return pandas_matcher.match()
 
 
@@ -411,7 +413,6 @@ def verify(matched_df, query_tool):
 
     verified_df = matched_df.copy()
     col_name = 'NIMSP_ID'
-    matches = verified_df[~verified_df['match_status'].isin(['UNMATCHED'])]
     
     query = \
         '''
@@ -419,7 +420,7 @@ def verify(matched_df, query_tool):
         FROM finsource_candidate
         WHERE finsource_id = 4
         AND code IN ({0})
-        '''.format(",".join([f"\'{nimsp_id}\'" for nimsp_id in matches[col_name]]))
+        '''.format(",".join([f"\'{nimsp_id}\'" for nimsp_id in verified_df[col_name]]))
 
     query_tool.query = (query,)
     query_tool.run()
@@ -457,7 +458,7 @@ def main():
     nimsp_api = NIMSPApi(API_KEY, YEAR)
     nimsp_json = NIMSPJson(nimsp_api.page_source())
 
-    extracted_records, last_updated = extract(nimsp_json, nimsp_api, JSON_FILES, EXTRACT_FOLDER)
+    extracted_records, last_updated = extract(nimsp_api, nimsp_json, JSON_FILES, EXTRACT_FOLDER)
 
     ## Extracted DataFrame
     extracted_df = pandas.DataFrame.from_records(extracted_records)
@@ -466,8 +467,6 @@ def main():
     ## Modeled DataFrame
     modeled_df = model(extracted_df)
     modeled_df.to_csv(f"{FILEPATH}/{last_updated}_NIMSP_Modeled.csv", index=False)
-
-    states = list(modeled_df['state_id'].value_counts().keys())
     
     connection_manager = database.ConnectionManager(os.path.dirname(__file__))
     connection_info, _ = connection_manager.read(1)
@@ -480,9 +479,8 @@ def main():
         f"""
          WHERE election.electionyear IN ({YEAR})
          AND office.code NOT LIKE 'US%'
-         AND election_candidate.state_id IN ({",".join([f"'{state}'" for state in states])})
         """
-    
+        
     query_tool.query = (election_candidates_query + election_candidates_conditions,)
     query_tool.run()
 

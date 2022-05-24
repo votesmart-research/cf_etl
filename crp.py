@@ -105,6 +105,8 @@ def match(crp_df, election_candidates_df):
     pandas_matcher.columns_to_match.pop('CID')
     pandas_matcher.columns_to_match.pop('FECCandID')
 
+    pandas_matcher.column_groups.append('state_id')
+
     return pandas_matcher.match()
 
 
@@ -196,15 +198,13 @@ def main():
 
     Table([[k, v]for k,v in match_info.items()]).draw()
 
-    matches = matched_df[~matched_df['match_status'].isin(['UNMATCHED'])]
-
     entered_crp_query = \
         '''
         SELECT code, candidate_id
         FROM finsource_candidate
         WHERE finsource_id = 1
         AND code IN ({0})
-        '''.format(",".join([f"\'{cid}\'" for cid in matches['CID']]))
+        '''.format(",".join([f"\'{cid}\'" for cid in matched_df['CID']]))
 
     query_tool.query = (entered_crp_query,)
 
@@ -216,7 +216,7 @@ def main():
         FROM finsource_candidate
         WHERE finsource_id = 2
         AND code IN ({0})
-        '''.format(",".join([f"\'{fecid}\'" for fecid in matches['FECCandID']]))
+        '''.format(",".join([f"\'{fecid}\'" for fecid in matched_df['FECCandID']]))
 
     query_tool.query = (entered_fec_query,)
 
