@@ -3,6 +3,7 @@ import os
 import pandas
 import sys
 
+from datetime import datetime
 from vs_library import database
 from vs_library.vsdb import queries
 from vs_library.tools import pandas_extension
@@ -44,7 +45,7 @@ def model(df):
     party = lambda x: party_reference[x] if x in party_reference.keys() else x
     office = lambda x: office_reference[x] if x in office_reference.keys() else re.sub('\d+', 'U.S. House', x)
 
-    name_split_df = df['CRPName'].str.split(pat=", ", expand=True)
+    name_split_df = df['CRPName'].str.split(pat=",", expand=True).apply(lambda x: x.apply(lambda y: y.strip() if y else y))
     name_extract_df = name_split_df[1].str.extract(f"{middlename}|{nickname}|{suffix}")
     state_extract = df['DistIDRunFor'].str.extract(state_id)['state_id']
     dist_extract = df['DistIDRunFor'].str.extract(district)['district']
@@ -163,7 +164,7 @@ def main():
     last_updated = "-".join(map(lambda x: '0' + x if len(x) < 2 else x, [_y, _m, _d]))
 
     cleaned_df = df.iloc[STARTING_ROW+1:, STARTING_COLUMN:].reset_index(drop=True)
-    cleaned_df.set_axis(list(df.iloc[STARTING_ROW, STARTING_COLUMN:]), axis='columns', inplace=True)
+    cleaned_df = cleaned_df.set_axis(list(df.iloc[STARTING_ROW, STARTING_COLUMN:]), axis='columns')
 
     ## Modeled DataFrame
     modeled_df = model(cleaned_df)
@@ -192,7 +193,7 @@ def main():
 
     ## Query DataFrame
     election_candidates_df = query_tool.results(as_format='pandas_df')
-    election_candidates_df.to_csv(f"{FILEPATH}/{YEAR}_Query.csv", index=False)
+    election_candidates_df.to_csv(f"{FILEPATH}/{TIMESTAMP}_Query.csv", index=False)
 
     matched_df, match_info = match(modeled_df, election_candidates_df)
 
@@ -231,6 +232,7 @@ if __name__  == "__main__":
     _, YEAR, CRP_FILE = sys.argv
 
     FILEPATH = os.path.dirname(CRP_FILE)
+    TIMESTAMP = datetime.strftime(datetime.now(), '%Y-%m-%d')
     STARTING_ROW = 13
     STARTING_COLUMN = 1
     
