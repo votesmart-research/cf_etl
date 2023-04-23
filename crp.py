@@ -1,13 +1,18 @@
-import re
+## built-ins
 import os
-import pandas
 import sys
+import re
 
 from datetime import datetime
+
+## external libraries and packages
+import pandas
+
+from rapidfuzz import fuzz
 from vs_library import database
 from vs_library.vsdb import queries
-from vs_library.tools import pandas_extension
-from vs_library.cli.objects import Table
+from tabular_matcher.matcher import TabularMatcher
+from tabular_matcher.config import MatcherConfig
 
 
 def model(df):
@@ -68,7 +73,7 @@ def model(df):
     return transformed_df
 
 
-def match(crp_df, election_candidates_df):
+def match(crp_df: pandas.DataFrame, election_candidates_df: pandas.DataFrame):
 
     """
     Configures the matching program and matches crp data with Vote Smart's to get the candidate_id
@@ -87,28 +92,36 @@ def match(crp_df, election_candidates_df):
     (pandas.DataFrame, dict)
     """
 
-    pandas_matcher = pandas_extension.PandasMatcher()
-    pandas_matcher.required_threshold = 85
+    records_crp = crp_df.to_dict('index')
+    records_ec = election_candidates_df.to_dict('index')
 
-    pandas_matcher.df_to = crp_df
-    pandas_matcher.df_from = election_candidates_df
+    tb_config = MatcherConfig(records_crp, records_ec)
+    tb_matcher = TabularMatcher(records_crp, records_ec, tb_config)
 
-    pandas_matcher.column_threshold['lastname'] = 88
-    pandas_matcher.column_threshold['suffix'] = 90
-    pandas_matcher.column_threshold['state_id'] = 100
-    pandas_matcher.column_threshold['district'] = 98
-    pandas_matcher.column_threshold['party'] = 95
-    pandas_matcher.column_threshold['office'] = 100
+    tb_config.scorers_by_column.SCORERS.update({'WRatio': lambda x,y: fuzz.WRatio(x,y)})
+    tb_config.scorers_by_column.default = 'WRatio'
+    tb_config.thresholds_by_column.default = 85
 
-    pandas_matcher.columns_to_get.append('candidate_id')
-    pandas_matcher.columns_to_match['firstname'] += ['nickname', 'middlename']
+    tb_config.populate()
 
-    pandas_matcher.columns_to_match.pop('CID')
-    pandas_matcher.columns_to_match.pop('FECCandID')
+    tb_config.columns_to_match.pop('CID')
+    tb_config.columns_to_match.pop('FECCandID')
+    tb_config.columns_to_match['firstname'] = 'nickname', 'middlename'
 
-    pandas_matcher.column_groups.append('state_id')
+    tb_config.columns_to_group['state_id'] = 'state_id'
+    tb_config.columns_to_get.add('candidate_id')
+    
+    tb_config.thresholds_by_column['lastname'] = 88
+    tb_config.thresholds_by_column['suffix'] = 90
+    tb_config.thresholds_by_column['state_id'] = 100
+    tb_config.thresholds_by_column['district'] = 98
+    tb_config.thresholds_by_column['party'] = 95
+    tb_config.thresholds_by_column['office'] = 100
 
-    return pandas_matcher.match()
+    tb_config.required_threshold = 85
+    tb_config.duplicate_threshold = 3
+
+    return tb_matcher.match()
 
 
 def verify(matched_df, query_tool, col_name):
@@ -197,8 +210,6 @@ def main():
 
     matched_df, match_info = match(modeled_df, election_candidates_df)
 
-    Table([[k, v]for k,v in match_info.items()]).draw()
-
     entered_crp_query = \
         '''
         SELECT code, candidate_id
@@ -225,6 +236,12 @@ def main():
     
     ## Verified and Matched DataFrame
     matched_df.to_csv(f"{FILEPATH}/{last_updated}_CRP_Matched.csv", index=False)
+
+    ## Prints match results
+    max_key_length = max(match_info, key=lambda x: len(x)) if match_info else 0
+    for k, v in match_info.items():
+        print(f"{k.rjust(max_key_length+4)}:", v)
+
 
 
 if __name__  == "__main__":

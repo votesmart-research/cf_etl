@@ -1,14 +1,18 @@
-import requests
-import json
-import pandas
-import re
+## built-ins
 import os
+import re
+import json
+
+## external library and packages
+import requests
+import pandas
 
 from tqdm import tqdm
+from rapidfuzz import fuzz
 from vs_library import database
 from vs_library.vsdb import queries
-from vs_library.tools import pandas_extension
-from vs_library.cli.objects import Table
+from tabular_matcher.matcher import TabularMatcher
+from tabular_matcher.config import MatcherConfig
 
 
 class NIMSPJson:
@@ -299,7 +303,7 @@ def extract(nimsp_api, nimsp_json, json_files=[], extract_path='~/NIMSP_JSON'):
     return extracted, nimsp_json.last_updated
 
 
-def model(df):
+def model(df: pandas.DataFrame):
 
     """
     Changes the initial raw format into a format comparable to Vote Smart's
@@ -352,7 +356,7 @@ def model(df):
     return transformed_df
 
 
-def match(nimsp_df, election_candidates_df):
+def match(nimsp_df: pandas.DataFrame, election_candidates_df: pandas.DataFrame):
 
     """
     Configures the matching program and matches nimsp data with Vote Smart's to get the candidate_id
@@ -371,27 +375,35 @@ def match(nimsp_df, election_candidates_df):
     (pandas.DataFrame, dict)
     """
 
-    pandas_matcher = pandas_extension.PandasMatcher()
-    pandas_matcher.required_threshold = 85
+    records_nimsp = nimsp_df.to_dict('index')
+    records_ec = election_candidates_df.to_dict('index')
 
-    pandas_matcher.df_to = nimsp_df
-    pandas_matcher.df_from = election_candidates_df
+    tb_config = MatcherConfig(records_nimsp, records_ec)
+    tb_matcher = TabularMatcher(records_nimsp, records_ec, tb_config)
 
-    pandas_matcher.column_threshold['lastname'] = 88
-    pandas_matcher.column_threshold['suffix'] = 95
-    pandas_matcher.column_threshold['state_id'] = 100
-    pandas_matcher.column_threshold['district'] = 98
-    pandas_matcher.column_threshold['party'] = 90
-    pandas_matcher.column_threshold['office'] = 90
+    tb_config.scorers_by_column.SCORERS.update({'WRatio': lambda x,y: fuzz.WRatio(x,y)})
+    tb_config.scorers_by_column.default = 'WRatio'
+    tb_config.thresholds_by_column.default = 85
 
-    pandas_matcher.columns_to_match['firstname'] += ['nickname', 'middlename']
-    pandas_matcher.columns_to_get.append('candidate_id')
+    tb_config.populate()
 
-    pandas_matcher.columns_to_match.pop('NIMSP_ID')
+    tb_config.columns_to_match.pop('NIMSP_ID')
+    tb_config.columns_to_match['firstname'] = 'nickname', 'middlename'
 
-    pandas_matcher.column_groups.append('state_id')
+    tb_config.columns_to_group['state_id'] = 'state_id'
+    tb_config.columns_to_get.add('candidate_id')
 
-    return pandas_matcher.match()
+    tb_config.thresholds_by_column['lastname'] = 88
+    tb_config.thresholds_by_column['suffix'] = 95
+    tb_config.thresholds_by_column['state_id'] = 100
+    tb_config.thresholds_by_column['district'] = 98
+    tb_config.thresholds_by_column['party'] = 90
+    tb_config.thresholds_by_column['office'] = 90
+    
+    tb_config.required_threshold = 85
+    tb_config.duplicate_threshold = 3
+
+    return tb_matcher.match()
 
 
 def verify(matched_df, query_tool):
@@ -490,11 +502,14 @@ def main():
 
     matched_df, match_info = match(modeled_df, election_candidates_df)
 
-    Table([[k, v]for k,v in match_info.items()]).draw()
-
     ## Verified DataFrame
     verified_df = verify(matched_df, query_tool)
     verified_df.to_csv(f"{FILEPATH}/{last_updated}_NIMSP_Matched.csv", index=False)
+
+    ## Prints match results
+    max_key_length = max(match_info, key=lambda x: len(x)) if match_info else 0
+    for k, v in match_info.items():
+        print(f"{k.rjust(max_key_length+4)}:", v)
 
 
 if __name__ == '__main__':
