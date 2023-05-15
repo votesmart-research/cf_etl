@@ -1,6 +1,5 @@
-rapidfuzz
 pandas
+rapidfuzz
 requests
 tqdm
 git+ssh://git@github.com/jtai-dev/tabular_matcher.git#egg=tabular_matcher
-git+ssh://git@github.com/votesmart-projects/vs_library.git#egg=vs_library
