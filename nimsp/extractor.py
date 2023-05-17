@@ -32,7 +32,7 @@ def save_extract(records_extract:dict):
     df.to_csv(EXTRACT_FILES / f"NIMSP_Extract.csv", index=False)
 
 
-def save_json(nimsp_json:NIMSPJson, export_directory:Path):
+def save_json(nimsp_json:NIMSPJson):
 
     JSON_FILES = EXPORT_DIR / 'JSON_FILES'
     JSON_FILES.mkdir(exist_ok=True)
