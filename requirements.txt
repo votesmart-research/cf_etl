@@ -1,4 +1,6 @@
 pandas
+xlrd
+pg8000
 rapidfuzz
 requests
 tqdm

@@ -1,4 +1,5 @@
 import pandas
+import numpy
 from pathlib import Path
 
 
@@ -21,6 +22,8 @@ def main(crp_file):
 
     df_extracted = df_crp.iloc[STARTING_ROW:, STARTING_COLUMN:].reset_index(drop=True)
     df_extracted.rename(df_crp.iloc[STARTING_ROW-1], axis='columns', inplace=True)
+
+    df_extracted.replace(numpy.NAN, '', inplace=True)
 
     records_extracted = df_extracted.to_dict(orient='index')
 

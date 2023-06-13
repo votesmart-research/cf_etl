@@ -109,7 +109,7 @@ def main(year:int) -> dict:
     while nimsp_json.meta_info.pages.current <= nimsp_json.meta_info.pages.last:
 
         records_extracted.update(extract_json(nimsp_json))
-        json_extract.append(nimsp_json)
+        json_extracted.append(nimsp_json)
         
         p_bar.update(1)
 

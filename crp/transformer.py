@@ -1,5 +1,6 @@
 import re
 import pandas
+import numpy
 from pathlib import Path
 
 
@@ -101,8 +102,10 @@ def main(records_extracted:Path):
                                    axis=1)
     
     df_transformed.replace(VALUES_TO_REPLACE, inplace=True)
+    # Empty df cells will need replaced with empty string for tabular matcher to work
+    # correctly
+    df_transformed.replace(numpy.NAN, '', inplace=True)
     df_transformed.rename(columns=COLUMNS_TO_RENAME, inplace=True)
-    
     
     records_transformed = df_transformed.to_dict(orient='index')
 

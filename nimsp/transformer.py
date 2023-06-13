@@ -1,5 +1,6 @@
 import re
 import pandas
+import numpy
 from pathlib import Path
 
 
@@ -17,7 +18,7 @@ ELECTION_STATUS = 'Status_of_Candidate'
 COLUMNS_TO_RENAME = {NIMSP_ID: 'NIMSP_ID',
                      ELECTION_YEAR: 'election_year',
                      PARTY: 'party',
-                     STATE: 'state',
+                     STATE: 'state_id',
                      }
 
 title_case = lambda x: x.title().strip() if isinstance(x, str) else x
@@ -66,7 +67,7 @@ def get_office_district(series:pandas.Series) -> pandas.DataFrame:
 
 def save_transformed(records_transformed):
     
-    df = pandas.DataFrame.from_dict(orient='index')
+    df = pandas.DataFrame.from_dict(records_transformed, orient='index')
 
     TRANSFORMED_FILES = EXPORT_DIR / 'TRANSFORMED_FILES'
     TRANSFORMED_FILES.mkdir(exist_ok=True)
@@ -86,11 +87,15 @@ def main(records_extracted:dict) -> dict:
     df_transformed = pandas.concat([df_name,
                                     df_office_district,
                                     df['party'].apply(title_case),
-                                    df['state'],
+                                    df['state_id'],
                                     df['election_year'],
                                     df['NIMSP_ID'],
                                     ],
                                     axis=1)
+    
+    # Empty df cells will need replaced with empty string for tabular matcher to work
+    # correctly
+    df_transformed.replace(numpy.NAN, '', inplace=True)
     
     records_transformed = df_transformed.to_dict(orient='index')
 
@@ -110,4 +115,4 @@ if __name__ == '__main__':
 
     records_transformed = main(records_extracted)
 
-    save_transformed(df_transformed)
+    save_transformed(records_transformed)

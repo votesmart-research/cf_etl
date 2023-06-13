@@ -52,7 +52,7 @@ def match(records_crp:dict, records_ec:dict):
     tb_config = MatcherConfig(records_crp, records_ec)
     tb_matcher = TabularMatcher(records_crp, records_ec, tb_config)
 
-    tb_config.scorers_by_column.SCORERS.update({'WRatio': lambda x,y: fuzz.WRatio(x,y)})
+    tb_config.scorers_by_column.SCORERS.update({'WRatio': lambda x,y: fuzz.WRatio(str(x),str(y))})
     tb_config.scorers_by_column.default = 'WRatio'
     tb_config.thresholds_by_column.default = 85
 
@@ -133,9 +133,9 @@ def main(records_transformed:dict, *election_years) -> tuple[dict, dict]:
         f"""
         WHERE election.electionyear IN ({",".join(election_years)})
         AND office.office_id IN (1,5,6)
-        AND election_candidate.state_id IN ({",".join([f"'{state}'" for state in states])})
+        AND election_candidate.state_id IN ({",".join([f"'{state}'" for state in set(states)])})
         """
-
+    
     records_ec = query_from_database(formatted_query_ec, vs_db_connection)
     records_matched, match_info = match(records_transformed, records_ec)
 
