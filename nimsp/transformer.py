@@ -98,7 +98,7 @@ def main(records_extracted:dict) -> dict:
     df_transformed.replace(numpy.NAN, '', inplace=True)
     
     records_transformed = df_transformed.to_dict(orient='index')
-
+    print(records_transformed)
     return records_transformed
 
 

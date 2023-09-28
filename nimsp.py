@@ -38,7 +38,7 @@ def save_json(nimsp_json:NIMSPJson):
 
 def save_transformed(records_transformed):
 
-    df_transformed = pandas.DataFrame.from_dict(records_transformed)
+    df_transformed = pandas.DataFrame.from_dict(records_transformed, orient='index')
 
     TRANSFORMED_FILES = EXPORT_DIR / 'TRANSFORMED_FILES'
     TRANSFORMED_FILES.mkdir(exist_ok=True)

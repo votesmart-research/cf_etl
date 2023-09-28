@@ -61,7 +61,7 @@ if __name__ == '__main__':
     
     if not YEARS:
         print("Please enter at least one election year after"
-              "extract file parameter")
+              " extract file parameter")
         exit()
 
     EXPORT_DIR = Path(EXPORT_DIR)
