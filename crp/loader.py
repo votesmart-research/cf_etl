@@ -49,8 +49,11 @@ def save_verified(records_verified:dict, records_queried:dict):
 
 def match(records_crp:dict, records_ec:dict):
 
-    tb_config = MatcherConfig(records_crp, records_ec)
-    tb_matcher = TabularMatcher(records_crp, records_ec, tb_config)
+    tb_config = MatcherConfig()
+    tb_matcher = TabularMatcher(tb_config)
+
+    tb_matcher.x_records = records_crp
+    tb_matcher.y_records = records_ec
 
     tb_config.scorers_by_column.SCORERS.update({'WRatio': lambda x,y: fuzz.WRatio(str(x),str(y))})
     tb_config.scorers_by_column.default = 'WRatio'

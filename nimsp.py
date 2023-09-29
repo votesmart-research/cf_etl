@@ -1,29 +1,32 @@
-import sys
+# Built-in packages
 from pathlib import Path
+from datetime import datetime
 
+# External packages and libraries
 import pandas
+
+# Internal packages and libraries
 from nimsp.api import NIMSPJson
 from nimsp.extractor import main as extract
 from nimsp.transformer import main as transform
 from nimsp.loader import main as nimsp_load
 
-from datetime import datetime
-
 
 TIMESTAMP = datetime.strftime(datetime.now(), '%Y-%m-%d')
 
 
-def save_extract(records_extract:dict):
+def save_extract(records_extract: dict):
 
     df_extract = pandas.DataFrame.from_dict(records_extract, orient='index')
 
     EXTRACT_FILES = EXPORT_DIR / 'EXTRACT_FILES'
     EXTRACT_FILES.mkdir(exist_ok=True)
 
-    df_extract.to_csv(EXTRACT_FILES / f"{TIMESTAMP}_NIMSP_Extract.csv", index=False)
+    df_extract.to_csv(
+        EXTRACT_FILES / f"{TIMESTAMP}_NIMSP_Extract.csv", index=False)
 
 
-def save_json(nimsp_json:NIMSPJson):
+def save_json(nimsp_json: NIMSPJson):
 
     JSON_FILES = EXPORT_DIR / 'JSON_FILES'
     JSON_FILES.mkdir(exist_ok=True)
@@ -32,21 +35,23 @@ def save_json(nimsp_json:NIMSPJson):
     current_page = nimsp_json.meta_info.pages.current
 
     filename = f"{last_updated.strftime('%Y-%m-%d-%H%M%S') if last_updated else ''}_NIMSP_page-{current_page}"
-    
+
     nimsp_json.export(JSON_FILES / f"{filename}.json")
 
 
 def save_transformed(records_transformed):
 
-    df_transformed = pandas.DataFrame.from_dict(records_transformed, orient='index')
+    df_transformed = pandas.DataFrame.from_dict(
+        records_transformed, orient='index')
 
     TRANSFORMED_FILES = EXPORT_DIR / 'TRANSFORMED_FILES'
     TRANSFORMED_FILES.mkdir(exist_ok=True)
 
-    df_transformed.to_csv(TRANSFORMED_FILES / f"{TIMESTAMP}_NIMSP_Transformed.csv", index=False)
+    df_transformed.to_csv(TRANSFORMED_FILES /
+                          f"{TIMESTAMP}_NIMSP_Transformed.csv", index=False)
 
 
-def save_verified(records_verified:dict, records_queried:dict):
+def save_verified(records_verified: dict, records_queried: dict):
 
     df_verified = pandas.DataFrame.from_dict(records_verified, orient='index')
     df_queried = pandas.DataFrame.from_dict(records_queried, orient='index')
@@ -54,8 +59,10 @@ def save_verified(records_verified:dict, records_queried:dict):
     VERIFIED_FILES = EXPORT_DIR / 'VERIFIED_FILES'
     VERIFIED_FILES.mkdir(exist_ok=True)
 
-    df_verified.to_csv(VERIFIED_FILES / f"{TIMESTAMP}_NIMSP_Matched.csv", index=False)
-    df_queried.to_csv(VERIFIED_FILES / f"{TIMESTAMP}_NIMSP_Query.csv", index=False)
+    df_verified.to_csv(
+        VERIFIED_FILES / f"{TIMESTAMP}_NIMSP_Matched.csv", index=False)
+    df_queried.to_csv(
+        VERIFIED_FILES / f"{TIMESTAMP}_NIMSP_Query.csv", index=False)
 
 
 def main():
@@ -64,7 +71,7 @@ def main():
 
     for e in json_extract:
         save_json(e)
-    
+
     save_extract(records_extracted)
 
     records_transformed = transform(records_extracted)
@@ -75,6 +82,17 @@ def main():
 
 
 if __name__ == '__main__':
-    _, EXPORT_DIR, YEAR = sys.argv
-    EXPORT_DIR = Path(EXPORT_DIR)
+    import argparse
+
+    parser = argparse.ArgumentParser(prog='campaign_finance_nimsp')
+    parser.add_argument('-e', '--exportdir', type=Path, required=True,
+                        help="Path of the directory where the exported file goes.")
+    parser.add_argument('-y', '--year', required=True,
+                        help="Election year(s) of candidates in the file.")
+
+    args = parser.parse_args()
+
+    EXPORT_DIR = args.exportdir
+    YEAR = args.year
+
     main()
