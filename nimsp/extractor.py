@@ -108,17 +108,29 @@ def main(year: int) -> dict:
     json_extracted = []
 
     p_bar = tqdm(total=nimsp_json.meta_info.pages.total, desc='Extracting...')
+    last_page = nimsp_json.meta_info.pages.last
+    
+    while True:
+        
+        if str(nimsp_json.meta_info) != 'null':
+            if nimsp_json.meta_info.pages.current <= nimsp_json.meta_info.pages.last:
+        
+                records_extracted.update(extract_json(nimsp_json))
+                json_extracted.append(nimsp_json)
 
-    while nimsp_json.meta_info.pages.current <= nimsp_json.meta_info.pages.last:
-
-        records_extracted.update(extract_json(nimsp_json))
-        json_extracted.append(nimsp_json)
-
-        p_bar.update(1)
-
-        nimsp_json, params = api_nimsp.make_call(
-            {'p': nimsp_json.meta_info.pages.current+1})
-
+                p_bar.update(1)
+                nimsp_json, params = api_nimsp.make_call(
+                    {'p': nimsp_json.meta_info.pages.current+1})
+            else:
+                break
+        else:
+            if p_bar.n < last_page:
+                nimsp_json, params = api_nimsp.make_call(
+                    {'p': p_bar.n+1})
+                p_bar.update(1)
+            else:
+                break
+        
     return records_extracted, json_extracted
 
 

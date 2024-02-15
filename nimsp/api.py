@@ -100,7 +100,7 @@ class NIMSPApi:
             return NIMSPJson(data), active_params
         
         except json.decoder.JSONDecodeError:
-            return {}, active_params
+            return NIMSPJson(dict({})), active_params
 
 
 class JSONObject:

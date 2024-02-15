@@ -27,7 +27,7 @@ title_case = lambda x: x.title().strip() if isinstance(x, str) else x
 def transform_name(series:pandas.Series) -> pandas.DataFrame:
 
     suffix = r'\b(?P<suffix>[IVX][IVX]+$|[DJMS][RS][S]?[\.]?$)'
-    lastname = lambda x: re.sub(f"{suffix}|\(.*\)", "", x) if x else ""
+    lastname = lambda x: re.sub(fr"{suffix}|\(.*\)", "", x) if x else ""
     middlename = r'\b(?P<middlename>[A-Z]{1}$)\b'
     nickname = r'[\"\'\(](?P<nickname>.*?)[\"\'\)]'
     firstname = lambda x: re.sub(f"{middlename}|{nickname}", "", x) if x else ""
