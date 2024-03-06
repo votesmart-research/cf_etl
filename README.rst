@@ -1,17 +1,20 @@
-
+====================
 Campaign Finance ETL
 ====================
 
-This repository contains scripts designed to extract data from Open Secrets and NIMSP, transform this data to fit the VoteSmart data model, and match the transformed data to assign a unique candidate ID from VoteSmart's database.
+This repository contains scripts designed to extract data from Open Secrets and NIMSP, transform this data to fit the VoteSmart data model, 
+and match the transformed data to assign a unique candidate ID from VoteSmart's database.
 
-
+------------------
 Maintainer's Guide
-++++++++++++++++++
+------------------
 
-This section is for the 
+This section is for the maintainer of this repository, who is responsible for running the scripts to update VoteSmart's campaign finance data, 
+resolving any bugs or issue that comes with this repository and general understanding of this 
 
+~~~~~~~~~~~~~~~~~~~~~~
 Installation and Setup
-''''''''''''''''''''''
+~~~~~~~~~~~~~~~~~~~~~~
 
 Before you begin, ensure you have Python installed on your system. This project requires Python 3.x.
 
@@ -77,8 +80,7 @@ Basic Maintenance
 
      git pull origin main
 
-
-
+---------------------
 Verifying the Results
 ---------------------
 
@@ -86,7 +88,7 @@ This section outlines a checklist for reviewing the campaign finance matched spr
 
 It's not necessary to follow every item if you're familiar with the process. Avoid doing multiple checklist items at once to prevent confusion and ensure a thorough review. Rather, work on them one at a time, such that if you are working on section A, then continue working on section A until you have finished handling that particular issue. The general rule is to thoroughly complete one section before moving on to the other.
 
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 A. Handling Duplicates Within the Matched File
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
