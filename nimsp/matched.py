@@ -1,8 +1,10 @@
 # Built-in packages
 import json
 from pathlib import Path
+from datetime import datetime
 
 # External packages and libraries
+import pandas
 import pg8000
 from rapidfuzz import fuzz
 from tqdm import tqdm
@@ -92,18 +94,17 @@ def verify(records_matched: dict, records_finsource: dict, col_name):
 
 
 def connect_to_database():
-    PACKAGE_DIR = Path(__file__).parent.parent
-    CONNECTION_INFO_FILEPATH = PACKAGE_DIR / "connection_info.json"
+    package_dir = Path(__file__).parent.parent
 
-    with open(CONNECTION_INFO_FILEPATH, "r") as f:
+    with open(package_dir / "connection_info.json", "r") as f:
         connection_info = json.load(f)
 
     return pg8000.connect(**connection_info, timeout=10)
 
 
-def query_from_database(query: str, connection: pg8000.Connection):
+def query_from_database(query: str, connection, **params):
     cursor = connection.cursor()
-    cursor.execute(query)
+    cursor.execute(query, params)
     headers = [str(k[0]) for k in cursor.description]
     return {
         index: dict(zip(headers, row)) for index, row in enumerate(cursor.fetchall())
@@ -111,22 +112,11 @@ def query_from_database(query: str, connection: pg8000.Connection):
 
 
 def load_query_string(query_filename):
-    PACKAGE_DIR = Path(__file__).parent.parent
-    with open(PACKAGE_DIR / "queries" / query_filename, "r") as f:
+    package_dir = Path(__file__).parent.parent
+    with open(package_dir / "queries" / query_filename, "r") as f:
         query_string = f.read()
 
     return query_string
-
-
-def save_verified(records_verified: dict, records_queried: dict):
-    df_verified = pandas.DataFrame.from_dict(records_verified, orient="index")
-    df_queried = pandas.DataFrame.from_dict(records_queried, orient="index")
-
-    VERIFIED_FILES = EXPORT_DIR / "VERIFIED_FILES"
-    VERIFIED_FILES.mkdir(exist_ok=True)
-
-    df_verified.to_csv(VERIFIED_FILES / f"NIMSP_Matched.csv", index=False)
-    df_queried.to_csv(VERIFIED_FILES / f"NIMSP_Queried.csv", index=False)
 
 
 def main(records_transformed: dict) -> tuple[dict, dict]:
@@ -143,8 +133,12 @@ def main(records_transformed: dict) -> tuple[dict, dict]:
         """
     )
 
-    records_ec = query_from_database(formatted_query_ec, vs_db_connection)
-    records_matched, match_info = match(records_transformed, records_ec)
+    records_query = query_from_database(query_election_candidates, 
+                                        vs_db_connection,
+                                        election_years=election_years,
+                                        stages = ['G', 'P'],
+                                        office_id = ['1','5','6'])
+    records_matched, match_info = match(records_transformed, records_query)
 
     # Prints match results
     max_key_length = max(match_info, key=lambda x: len(x)) if match_info else 0
@@ -165,21 +159,48 @@ def main(records_transformed: dict) -> tuple[dict, dict]:
     records_nimsp = query_from_database(formatted_query_nimsp, vs_db_connection)
     records_verified = verify(records_matched, records_nimsp, "NIMSP_ID")
 
-    return records_verified, records_ec
+    return records_verified, records_query
 
 
 if __name__ == "__main__":
-    import sys
-    import pandas
-
-    _, EXPORT_DIR, TRANSFORMED_FILE = sys.argv
-
-    EXPORT_DIR = Path(EXPORT_DIR)
-    TRANSFORMED_FILE = Path(TRANSFORMED_FILE)
-
-    df_transformed = pandas.read_csv(TRANSFORMED_FILE, na_values='', keep_default_na=False)
     
-    records_transformed = df_transformed.to_dict(orient="index")
-    records_verified, records_ec = main(records_transformed)
+    import pandas
+    import argparse
 
-    save_verified(records_verified, records_ec)
+    parser = argparse.ArgumentParser(prog="nimsp_extractor")
+    args = parser.parse_args()
+
+    parser.add_argument(
+        "-e",
+        "--export_dir",
+        type=Path,
+        required=True,
+        help="Path of the directory where the exported file goes.",
+    )
+    parser.add_argument(
+        "-t",
+        "--transformed_files",
+        required=True,
+        help="Election year(s) of candidates in the file.",
+    )
+    
+    def save_records(records: dict[int, dict[str, str]], filepath: Path, filename: str=None):
+
+        filepath.mkdir(exist_ok=True)
+
+        timestamp = datetime.strftime(datetime.now(), "%Y-%m-%d-%H%M%S-%f")
+
+        df = pandas.DataFrame.from_dict(records, orient='index')
+        df.to_csv(
+            filepath / f"{filename if filename else "records"}_{timestamp}.csv",
+            index=False,
+        )
+    
+    df_transformed = pandas.read_csv(args.transformed_files, na_values='', keep_default_na=False)
+    records_transformed = df_transformed.to_dict(orient="index")
+    
+    records_verified, records_ec = main(records_transformed)
+    
+    save_records(records_ec, args.export_dir / "MATCHED_FILES", "NIMSP_Matched")
+    save_records(records_verified, args.export_dir / "QUERY_FILES", "NIMSP_Matched")
+

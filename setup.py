@@ -15,9 +15,9 @@ with open('requirements.txt') as f:
         else:
             install_requires.append(line)
 
-setup_info = {'name':'tabular_matcher',
-              'version': '1.0.0',
-              'description': 'Finds matches between two sets of tabular data',
+setup_info = {'name':'campaign_finance_etl',
+              'version': '0.0.1',
+              'description': 'ETL for VoteSmart\'s Campaign Finance',
               'author': 'Johanan Tai',
               'author_email': 'jtai.dvlp@gmail.com',
               'url':'https://github.com/jtai-dev/campaign_finance',

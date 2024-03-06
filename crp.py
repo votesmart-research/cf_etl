@@ -7,7 +7,7 @@ import pandas
 
 # Internal packages and libraries
 from crp.extractor import main as extract
-from crp.loader import main as crp_load
+from crp.matched import main as crp_load
 from crp.transformer import main as transform
 
 TIMESTAMP = datetime.strftime(datetime.now(), '%Y-%m-%d')

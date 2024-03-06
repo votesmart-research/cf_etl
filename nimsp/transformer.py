@@ -1,7 +1,10 @@
 import re
+from pathlib import Path
+from datetime import datetime
+
+# External Libraries and Packages
 import pandas
 import numpy
-from pathlib import Path
 
 
 NIMSP_ID = 'Candidate_Entity_id'
@@ -65,16 +68,6 @@ def get_office_district(series:pandas.Series) -> pandas.DataFrame:
                           axis=1)
 
 
-def save_transformed(records_transformed):
-    
-    df = pandas.DataFrame.from_dict(records_transformed, orient='index')
-
-    TRANSFORMED_FILES = EXPORT_DIR / 'TRANSFORMED_FILES'
-    TRANSFORMED_FILES.mkdir(exist_ok=True)
-
-    df.to_csv(TRANSFORMED_FILES / f"NIMSP_Transformed.csv", index=False)
-
-
 def main(records_extracted:dict) -> dict:
 
     df = pandas.DataFrame.from_dict(records_extracted, orient='index')
@@ -98,20 +91,38 @@ def main(records_extracted:dict) -> dict:
     df_transformed.replace(numpy.NAN, '', inplace=True)
     
     records_transformed = df_transformed.to_dict(orient='index')
+    
     return records_transformed
 
 
 if __name__ == '__main__':
-    import sys
+    import pandas
+    import argparse
 
-    _, EXPORT_DIR, EXTRACT_FILE = sys.argv
+    parser = argparse.ArgumentParser(prog="nimsp_extractor")
+    args = parser.parse_args()
 
-    EXPORT_DIR = Path(EXPORT_DIR)
-    EXTRACT_FILE = Path(EXTRACT_FILE)
+    parser.add_argument(
+        "-e",
+        "--export_dir",
+        type=Path,
+        required=True,
+        help="Path of the directory where the exported file goes.",
+    )
+    parser.add_argument(
+        "-t",
+        "--extract_file",
+        required=True,
+        help="Election year(s) of candidates in the file.",
+    )
 
-    df_extract = pandas.read_csv(EXTRACT_FILE)
+    df_extract = pandas.read_csv(args.extract_file)
+    
     records_extracted = df_extract.to_dict(orient='index')
-
     records_transformed = main(records_extracted)
-
-    save_transformed(records_transformed)
+    
+    df_transformed = pandas.DataFrame.from_dict(records_transformed, orient='index')
+    df_transformed.to_csv(
+        args.export_dir / f"NIMSP_Transformed_{datetime.strftime(datetime.now(), "%Y-%m-%d-%H%M%S-%f")}.csv",
+        index=False,
+    )
