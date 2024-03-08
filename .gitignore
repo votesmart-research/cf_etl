@@ -131,8 +131,4 @@ dmypy.json
 
 # CUSTOM
 .DS_Store
-connection_info.json
-*API_KEY
-documentation/
-vs_library
-queries/
+.virtualenvs/

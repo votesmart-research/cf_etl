@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cf_etl"
+description = "ETL pipeline for VoteSmart's Campaign Finance Data"
+authors = [{ name = "Johanan Tai", email = "jtai.dvlp@gmail.com" }]
+readme = "README.rst"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dynamic = ["version"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "pandas",
+    "requests",
+    "psycopg",
+    "rapidfuzz",
+    "xlrd",
+    "tqdm",
+    "unidecode",
+    "python-dotenv",
+    "record_matcher@git+ssh://git@github.com/jtai-dev/record_matcher.git#egg=record_matcher",
+]
+
+[project.scripts]
+cf_crp = "cf_etl.crp_script:main"
+cf_nimsp = "cf_etl.nimsp_script:main"
+
+[tool.setuptools.package-data]
+cf_etl =  ["queries/*.sql", "config/.env"]
