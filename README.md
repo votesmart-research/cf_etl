@@ -27,7 +27,6 @@ There are two ways to download the code:
       ```
       It is better to fork the repository if you are working with another person rather than making changes directly to the main repo.
 </br>
-
 ## Setup
 
 Before installation, there are a few patch ups in order for the program to be installed correctly.
