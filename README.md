@@ -1,120 +1,211 @@
 # Campaign Finance ETL
 
-#### This respository contains scripts that are built to extract data from Open Secrets and NIMSP, transform the extracted data that fits the VoteSmart's data model, match the transformed data so that each will be assigned a unique candidate id from the VoteSmart's database.
+This repository contains scripts designed to extract data from Open Secrets and NIMSP, transform this data to fit the VoteSmart data model, and match the transformed data to assign a unique candidate ID to each candidate from VoteSmart's database.
 
+</br>
+</br>
 
-## Verifying the Results
-This section serves as a comprehensive checklist for reviewing the campaign finance matched spreadsheet. The objective of this review is to ensure accurate matching of all candidates from the campaign finance (CF) groups (OpenSecrets or NIMSP) with candidates from our database. It is expected that there will be candidates that are not matched or errors in matching. Upon completion of the review, an "Import" sheet will be created for submission to IT for database entry. To prevent assigning the finsource_candidate_id (a unique id given to a campaign by a CF group) to the wrong candidate, it is imperative to correct any matching errors.
+# Setup, Installation and Usage
 
-Correcting errors may involve deleting the candidate_id from the spreadsheet or removing wrongly assigned finsource_candidate_id on Admin.
+**Requirements:** Python 3.10 or higher, Python's pip 21.0 or higher, setuptools 61.0 or higher
 
-It is not necessary to go through every item on the checklist if you are already familiar with the process. It is recommended to avoid performing multiple checklist items simultaneously to prevent confusion and overlook important reviews; conducting them one at a time is the most effective approach to avoid confusion.
+### Get source
 
+There are two ways to download the code:
 
-## A. Dealing with duplicates within the matched file
+   1. **Download and unzip [here](https://github.com/votesmart-research/campaign_finance_etl/archive/refs/heads/main.zip).**
 
-### Steps:
-1. Filter the rows to show only the ones with ‘DUPLICATES’ match status
-2. Arrange the column ‘candidate_id’ in order (ascending or descending doesn’t matter), this puts the duplicated candidate_ids for side-by-side comparison
-3. Arrange the column ‘match_score’ in order (ascending or descending doesn’t matter), this helps visualize either the top or bottom with the higher or lower score
-4. Start choosing which candidate_ids to delete
+   2. **Clone the Repository (do this if you are planning to maintain this repository):**
 
-### Things to look out for:
-- Which candidates have the highest score; usually, the one with the higher score is the correct one
-- Check to see if the candidate_info (includes names and election info) in the matched file (from CF group) matches with the candidate info in Vote Smart’s database as suggested by the candidate_id
-    - 2 ways:
-        - Copy & Paste candidate_id onto the ‘Find’ in the Query file and look at the candidate info on the row it returns, compare the info with the one on the matched file
-        - Copy & Paste candidate_id onto Admin and search for the candidate to compare candidate info on the matched file vs Admin
+      On the terminal, type
 
-### Known cases:
-1. **Same person but 2 or more different finsource_candidate_id while having the same PVS candidate_id matched to it**
-   The same person might have run for multiple elections and thus have 2 or more finsource_candidate_id for each of the races. This is how the CF group’s organized their data, much like how we may have multiple election_candidate_ids for each unique candidate_id. In this case, you should leave the candidate_id that has the best representation from the finsource_candidate_id and delete the one that doesn’t.
-   - **The objective best is to satisfy this question: Does this finsource_candidate_id pull the campaign finance data that correctly reflects the election that the candidate is running for?**
+      ```bash
+      git clone git@github.com:votesmart-research/campaign_finance_etl.git
+      ```
 
-2. **Different person and different finsource_candidate_id while having the same PVS candidate_id matched to it**
-   This happens when there are two very probable candidate matches from our perspective, though one usually is higher than the other. In this case, you should leave behind the candidate_id (again from our perspective) that has the higher match score and delete the one with the lower score.
+## Setup
 
+### Create a .env file
+This file contains sensitive information and is not uploaded to the main repository by default. The .env file contains the following information:
 
+   1. **NIMSP API Key**: This would be the API key provided by NIMSP.
+      
+   2. **VoteSmart's Database Connection**: This is the conenction info to connect to VoteSmart's database
 
-## B. Dealing with matches that needs to be reviewed
+#### Create a `.env` file within this directory:
 
-### Steps:
-1. Filter the rows to show only the ones with ‘REVIEW’ match status
-2. Arrange the column ‘match_score’ in order (ascending or descending doesn’t matter), this helps prioritize which candidates to check for (optional if you are going to review all of them)
-3. Filter out the rows that are marked “YES” on the “...ENTERED?” column. You won’t be importing the ones that are already entered on our database (also optional if you think it is necessary that you review all of them—no kidding.)
+```bash
+src/ -> cf_etl/ -> config/.env
+```
 
-### Things to look out for:
-- Exact matching scores for a group of 3 or more candidates. Typically, a group of candidates having the same matching scores are likely to be correctly matched, this is due to the program agreeing that individual columns have data structured in a way that will always return a set score. However, your discretion is advised! It might hurt to review all, but it is always good to be thorough.
+*Make a copy of the `.env.sample` file and remove '.sample' from the extension, and fill in the variables as described in the file.*
 
-- Check to see if the candidate_info (includes names and election info) in the matched file (from CF group) matches with the candidate info in Vote Smart’s database as suggested by the candidate_id
-    - 2 ways:
-        - Copy & Paste candidate_id onto the ‘Find’ in the Query file and look at the candidate info on the row it returns, compare the info with the one on the matched file
-        - Copy & Paste candidate_id onto Admin and search for the candidate info to compare candidate info on the matched file
+</br>
 
-### Known cases:
-1. Candidate info (includes names and election info) that match up
-   If it’s true, leave the candidate_id; you are probably right!
+## Installation
 
-2. Candidate info (includes names and election info) that doesn’t match up
-   If it’s true, remove the candidate_id; you are probably right!
+### Create a Virtual Environment
 
+   Although optional, it is highly recommended to install the application to a virtual environment, as this would prevent any unintended system-wide changes.
 
-## C. Dealing with ambiguous matches (potential duplicates within our database)
+   **On the terminal,**
 
-Ambiguous matches occur due to apparent duplicates in our database, although it is likely not the case. This situation often arises with married couples who are candidates but one has passed away and the other took their office, both having the same last names and first names producing no significant difference. In technical terms, the program produces the same matching score for 2 or more candidates.
+   ```bash
+   python3 -m venv ~/venv/cf_etl
+   ```
 
-### Steps:
-1. Filter the rows to show only the ones with ‘AMBIGUOUS’ match status
+   **Activate virtual environment on Windows,**
+   ```bash
+   .~\venv\cf_etl\Scripts\activate
+   ```
 
-### Things to look out for:
-You will have to review each one of them. This is a rare case, so it shouldn’t be many unless there is something wrong with the queried datasets from our database.
+   **Activate virtual environment on Mac,**
 
-### Known cases:
-1. **Duplicated candidates within our database**
-   This occurs when biographical and election info is shared between 2 or more candidate_ids albeit the same person. Bring this to the attention of your superiors or if you have the authority to delete them, do so.
-   
-2. **Non-duplicated candidates within our database but share very similar info**
-   This only happens when one or more columns return the same score albeit having different values, this is a fuzzy string matching issue. Example: ‘Kim’ matching with ‘Jim’ vs ‘Kim’ matching with ‘Tim’ will produce the same matching score, assuming all other info is kept constant.
+   ```bash
+   source ~/venv/cf_etl/bin/activate
+   ```
 
+### Install using pip and setuptools
 
-## D. Dealing with finsource_candidate_id that have been assigned to another candidate_id(s) other than the ones being matched
+Within the top directory of the folder, on the terminal type:
 
-**finsource_candidate_id columns: CID, FECCandID, NIMSP_ID**
+   ```bash
+   pip3 install .
+   ```
 
-- **YES:** the candidate_id on that row already has the finsource_candidate_id for that row assigned to it
-- **NO:** the candidate_id on that row does not have the finsource_candidate_id for that row assigned to it
-- **“Entered for (other candidate_id)”:** the finsource_candidate_id on that row is assigned to another candidate_id in our database
+</br>
 
-### Steps:
-1. Filter the rows to show only “Entered for…” on the “...ENTERED?” column
+## Usage
 
-### Things to look out for:
-- **Match status**
-  Depending on the filtered rows, the match_status may or may not matter. 
-  If there are any statuses other than “UNMATCHED” (you can filter them out), and you have already reviewed them, you may just ignore the candidate_id portion (that may or may not be empty). If it’s not empty, turn your focus then to the candidate_id(s) that are in “Entered for…”.
+Two commands will be available after installation. If package is installed in a virtual environment, be sure to activate it.
+
+```bash
+# For CRP
+cf_crp
+
+# For NIMSP
+cf_nimsp
+```
+Running individual script is possible, although not recommended as the pipeline is desgined to be ran using commands.
+
+The commands above accepts required inputs such as the Election year(s) of the candidates (-y), filepath (-f) and export directory (-d). It also accepts optional parameters such as (-e), (-t) and (-m), these parameters are used to call individual process modules, and can only be used one at a time.
+
+### Example Usage
+
+```bash
+# For CRP
+cf_crp -f ~/Filepath/CRP_File.xlsx -d ~/Export_Direcotry -y 2023 2024
+
+# For NIMSP
+cf_nimsp -d ~/Export_Direcotry -y 2024
+```
+
+### Help with parameters
+
+```bash
+# For CRP
+cf_crp --help
+
+# For NIMSP
+cf_nimsp --help
+```  
   
-- **Multiple candidate_ids in the “Entered for…” column**
-  This signifies that there are more than one candidate on our database that is assigned the same finsource_candidate_id. This is obviously an error since more than one person cannot receive more than one finsource_candidate_id, the only possible exception is that they are running the same campaign like a Governor and Lieutenant governor.
+</br>
+</br>
+</br>
 
-### Known cases:
+# Reviewer's Guide
 
-1. **Had already been entered correctly for a candidate**
-   This could mean that the current match is wrong. Either that or it is a duplicate candidate within our database. There have been cases where we create another newer candidate which is a duplicate of the old one, most likely caused by being oblivious to the old candidates. In this case, if it is not a duplicate, then you could just remove the candidate_id on the spreadsheet. If it is a duplicate, make sure that the duplicate is merged with the candidate with the older id.
-   
-2. **Previously entered for a wrong candidate**
-   This could mean that we have made an error in the past. In this case, make sure to remove the finsource_candidate_id previously assigned to the wrong candidate. Although there are some cases where the one previously entered is a duplicate of the one currently matched. If the one previously entered is a duplicate, make sure it is merged with the currently matched candidate.
+This section outlines a checklist for reviewing the campaign finance matched spreadsheet. The goal is to ensure all candidates from the campaign finance groups (OpenSecrets or NIMSP) are accurately matched with candidates in our database. It's expected to find unmatched candidates or matching errors. After reviewing, an "Import" sheet will be prepared for IT to update the database. To avoid assigning the wrong unique ID (finsource_candidate_id) to a candidate, it's crucial to correct any matching errors.
 
+It's not necessary to follow every item if you're familiar with the process. Avoid doing multiple checklist items at once to prevent confusion and ensure a thorough review. Rather, work on them one at a time, such that if you are working on section A, then continue working on section A until you have finished handling that particular issue. The general rule is to thoroughly complete one section before moving on to the other.
+
+## A. Handling Duplicates Within the Matched File
+
+### Steps:
+
+1. Filter rows marked as 'DUPLICATES' in the match status column.
+2. Sort the 'candidate_id' column to compare duplicated IDs side-by-side.
+3. Sort the 'match_score' column to prioritize higher or lower scores.
+4. Decide which candidate_ids to remove.
+
+### Considerations:
+
+- Prioritize candidates with higher match scores.
+- Verify if the candidate information in the matched file matches VoteSmart's database.
+  - Use the 'Find' feature to search candidate by candidate_id in the Query file or search in Admin to compare candidate information.
+
+### Known Cases:
+
+1. **Same person but different finsource_candidate_ids**:</br>
+   If a single person has multiple finsource_candidate_ids for different elections, keep the ID that best represents their campaign.
+
+2. **Different persons with the same VoteSmart candidate_id**:</br>
+   Keep the one with the higher match score.
+
+## B. Reviewing Matches That Need Attention
+
+### Steps:
+
+1. Filter rows marked as 'REVIEW' in the match status column.
+2. Optionally, sort by 'match_score' to prioritize which candidates to review.
+3. Filter out rows already marked as entered (contains 'Entered for...') in our database if needed.
+
+### Considerations:
+
+- Confirm if the candidate information matches between the matched file and VoteSmart's database (via the Query file or Admin)
+- Candidates with identical matching scores are likely correctly matched, this would save some time to review, although thoroughly reviewing them would be preferred.
+
+### Known Cases:
+
+1. If candidate information matches, the candidate_id is likely correct.
+
+2. If information does not match, consider removing the candidate_id.
+
+## C. Addressing Ambiguous Matches
+
+Ambiguous matches often arise from apparent duplicates in our database. Not every case is a duplicate in our database, some may just be a very probable match.
+
+### Steps:
+
+1. Filter row marked as 'AMBIGUOUS' in the match status column.
+
+### Considerations:
+
+- Each case must be reviewed to see if it is the correct match.
+- Spouses sharing the same last name, office, and district.
+- Different persons but sharing very similar information
+- Actual duplicates within our database
+
+### Known Cases:
+
+1. **Duplicated candidates within our database**:</br>
+   May need consolidation, either merging their information on Admin or deleting one without merging them (may need to consult the Elections Director)
+
+2. **Non-duplicated candidates but sharing very similar information**:</br>
+   Choose the one with the most appropriate match (see 'matched with rows' and add 2 to the row index)
+
+## D. Correcting finsource_candidate_id assignments
+
+### Considerations:
+
+- Focus on entries marked as "Entered for {candidate_id}" to correct errors.
+
+### Known Cases:
+
+1. **Previously entered for the correct candidate**:</br>
+   If a finsource_candidate_id had already been previously entered correctly for another candidate, you may verify for potential duplicates. Note: This program may not always be right.
+
+2. **Previously entered for a wrong candidate**:</br>
+   Correct past errors by reassigning the finsource_candidate_id to the correct candidate.
 
 ## E. Finalizing Review & Creating Import Sheet
 
-Once you have done all the necessary checks, it is time to create the import sheet.
+**IMPORTANT:** This section should only be completed when all of the sections above are accounted for.
 
 ### Steps:
 
-1. Filter out rows that are blank on the ‘candidate_id’ column
-2. Filter out rows that are “YES” on the “...ENTERED?” column
-3. Create a new spreadsheet
-4. **Copy & Paste** both “candidate_id” and a finsource_candidate_id column (CID, FECCandID, NIMSP_ID)
-5. Repeat the process from step 3 if there are more than one finsource_candidate_id (in the case of Open Secrets)
-
-**Copy the whole column by selecting every possible row or you can also just click on the alphabet on top of the column names.
+1. Filter to exclude blank 'candidate_id' rows.
+2. Exclude rows already marked as entered ('YES' in the 'Entered for {finsource}' column)
+3. Prepare a new spreadsheet with necessary candidate_id and finsource_candidate_id columns for import.
+4. May repeat steps 1 to 3 for different finsource (hint: CID vs FECCandID)

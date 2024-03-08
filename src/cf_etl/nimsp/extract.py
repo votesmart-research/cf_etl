@@ -1,51 +1,63 @@
+import json
 from pathlib import Path
-from datetime import datetime
 from collections import defaultdict
 
 # External Libraries and Packages
-import pandas
 from tqdm import tqdm
 
-try:
-    from .api import NIMSPApi, NIMSPJson
-except ImportError:
-    from nimsp.api import NIMSPApi, NIMSPJson
+# api.py can only be imported relatively when this module is main
+from .api import NIMSPApi, NIMSPJson
 
 
-def extract_json(nimsp_json: NIMSPJson):
-
+def extract_json(nimsp_json: NIMSPJson) -> defaultdict[int, dict[str, str]]:
+    """Unwrap the values in the JSON file into records"""
     extracted = defaultdict(dict)
 
-    for record in nimsp_json.records.select():
+    for record in nimsp_json.records.all:
+        # The 'Candidate' Tag is ignored, so not to be confused
+        # with Candidate Entity
         record.ignore.append("Candidate")
-        for tag in record.select():
+        for tag in record.all:
+            # Not Candidate but Candidate Entity, a Candidate can have many
+            # Candidate Entity, since they can hold more than one campaigns
             if tag.name == "Candidate_Entity":
                 extracted[record.id]["NIMSP_ID"] = tag.id
+            # If we change the way we store CF data (eg. storing in a relational
+            # database), the line below may change
             extracted[record.id][tag.name] = tag.value
 
     return extracted
 
 
-def save_json(nimsp_json: NIMSPJson, filepath: Path, filename: str=None):
+def extract_json_files(files: list[Path]):
+    """Extract from the downloaded JSON files instead"""
+    extracted = {}
+
+    for file in files:
+        with open(file, "r") as f:
+            extracted.update(extract_json(NIMSPJson(json.load(f))))
+
+    return extracted
+
+
+def save_json(nimsp_json: NIMSPJson, filepath: Path):
+    """Save the JSON file into a .json file"""
+
+    filepath.mkdir(exist_ok=True)
 
     last_updated = nimsp_json.meta_info.reports.last_updated
     current_page = nimsp_json.meta_info.pages.current
 
-    filename = f"{last_updated.strftime('%Y-%m-%d-%H%M%S') if last_updated else ''}_NIMSP_page-{current_page}"
+    filename = (
+        f"NIMSP-Extract_page-{current_page}_"
+        f"{last_updated.strftime("%Y-%m-%d-%H%M%S") if last_updated else ''}"
+    )
 
     nimsp_json.export(filepath / f"{filename}.json")
 
 
-def load_api_key():
-
-    script_dir = Path(__file__).parent
-    api_key_filepath = script_dir / "API_KEY"
-
-    with open(api_key_filepath, "r") as f:
-        NIMSPApi.API_KEY = f.readline()
-
-
 def get_api_report(nimsp_api: NIMSPApi, nimsp_json: NIMSPJson, params: dict):
+    """Provides the information about the extraction from the API wrapper"""
 
     d = {
         "Base URL": [
@@ -61,8 +73,10 @@ def get_api_report(nimsp_api: NIMSPApi, nimsp_json: NIMSPJson, params: dict):
             nimsp_json.meta_info.pages.total_records,
         ],
     }
+
     param_d = defaultdict(list)
 
+    # Unpack the rest of the URL parameters and what is being queried
     for token_name, token_value in params.items():
 
         _token_name = nimsp_api.TOKEN_REF.get(token_name)
@@ -81,13 +95,23 @@ def get_api_report(nimsp_api: NIMSPApi, nimsp_json: NIMSPJson, params: dict):
     return d
 
 
-def main(year: int) -> dict:
+def main(api_key, year: int, export_path: Path, json_path: Path = None) -> dict:
 
-    load_api_key()
+    if json_path:
+        json_files = filter(
+            lambda f: f.name.endswith(".json"),
+            (export_path / json_path).iterdir(),
+        )
+        records_extracted = extract_json_files(
+            sorted(json_files, key=lambda x: x.stat().st_ctime)
+        )
+        return records_extracted
+
+    NIMSPApi.API_KEY = api_key
 
     api_nimsp = NIMSPApi()
 
-    # group by candidates; sort by state, office in ascending order
+    # Group by candidate, sorts by state, office in an ascending order
     api_nimsp.build(
         {
             "y": year,
@@ -105,20 +129,22 @@ def main(year: int) -> dict:
         print(f"\033[1m\n{name}:\033[0m")
         for value in l:
             print(f"{' '*4}{value}")
+    print()
 
     records_extracted = {}
-    json_extracted = []
 
     p_bar = tqdm(total=nimsp_json.meta_info.pages.total, desc="Extracting...")
     last_page = nimsp_json.meta_info.pages.last
 
     while True:
 
+        # Sometimes the API call returns a blank page, will have to catch that and
+        # move on to the next.
         if str(nimsp_json.meta_info) != "null":
             if nimsp_json.meta_info.pages.current <= nimsp_json.meta_info.pages.last:
 
                 records_extracted.update(extract_json(nimsp_json))
-                json_extracted.append(nimsp_json)
+                save_json(nimsp_json, filepath=export_path / "JSON_FILES")
 
                 p_bar.update(1)
                 nimsp_json, params = api_nimsp.make_call(
@@ -127,44 +153,11 @@ def main(year: int) -> dict:
             else:
                 break
         else:
+            # Uses the progress bar current iteration to check with the last page
             if p_bar.n < last_page:
                 nimsp_json, params = api_nimsp.make_call({"p": p_bar.n + 1})
                 p_bar.update(1)
             else:
                 break
 
-    return records_extracted, json_extracted
-
-
-if __name__ == "__main__":
-
-    import argparse
-
-    parser = argparse.ArgumentParser(prog="nimsp_extractor")
-    args = parser.parse_args()
-
-    parser.add_argument(
-        "-e",
-        "--export_dir",
-        type=Path,
-        required=True,
-        help="Path of the directory where the exported file goes.",
-    )
-    parser.add_argument(
-        "-y",
-        "--years",
-        required=True,
-        nargs="+",
-        help="Election year(s) of candidates in the file.",
-    )
-
-    records_extracted, json_extract = main(args.years, args.export_dir)
-
-    for e in json_extract:
-        save_json(e, args.export_dir / "JSON_FILES", "NIMSP_JSON")
-
-    df_extracted = pandas.DataFrame.from_dict(records_extracted, orient='index')
-    df_extracted.to_csv(
-            args.export_dir / f"NIMSP_Extract_{datetime.strftime(datetime.now(), "%Y-%m-%d-%H%M%S-%f")}.csv",
-            index=False,
-        )
+    return records_extracted
