@@ -114,9 +114,10 @@ cf_nimsp --help
 
 ## Configuration
 
-There are settings on this pipeline that requires re-configurations, this will require re-installation of the program.
+There are settings on this pipeline that requires re-configurations from time to time, this will require re-installation of the program.
 
 ### Uninstall
+
 **To uninstall, on the terminal type,**
 
 ```bash
