@@ -2,8 +2,6 @@
 
 This repository contains scripts designed to extract data from Open Secrets and NIMSP, transform this data to fit the VoteSmart data model, and match the transformed data to assign a unique candidate ID to each candidate from VoteSmart's database.
 
-</br>
-</br>
 
 # Setup, Installation and Usage
 
@@ -40,7 +38,6 @@ src/ -> cf_etl/ -> config/.env
 
 *Make a copy of the `.env.sample` file and remove '.sample' from the extension, and fill in the variables as described in the file.*
 
-</br>
 
 ## Installation
 
@@ -73,7 +70,6 @@ Within the top directory of the folder, on the terminal type:
    pip3 install .
    ```
 
-</br>
 
 ## Usage
 
@@ -110,7 +106,6 @@ cf_crp --help
 cf_nimsp --help
 ```  
   
-</br>
 </br>
 </br>
 
