@@ -114,7 +114,7 @@ cf_crp --help
 # For NIMSP
 cf_nimsp --help
 ```
-</br>
+
 ## Configuration
 
 There are settings on this pipeline that requires re-configurations from time to time, this will require re-installation of the program.
