@@ -20,6 +20,8 @@ There are two ways to download the code:
       ```bash
       git clone git@github.com:votesmart-research/campaign_finance_etl.git
       ```
+      It is better to fork the repository if you are working with another person rather than making changes directly to the main repo.
+
 
 ## Setup
 
