@@ -2,8 +2,11 @@
 
 This repository contains scripts designed to extract data from Open Secrets and NIMSP, transform this data to fit the VoteSmart data model, and match the transformed data to assign a unique candidate ID to each candidate from VoteSmart's database.
 
+</br>
 
 # User Guide
+
+This section is a guide for users of this pipeline.
 
 ## Download
 
