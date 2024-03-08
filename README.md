@@ -3,7 +3,9 @@
 This repository contains scripts designed to extract data from Open Secrets and NIMSP, transform this data to fit the VoteSmart data model, and match the transformed data to assign a unique candidate ID to each candidate from VoteSmart's database.
 
 
-# Setup, Installation and Usage
+# User Guide
+
+## Download
 
 **Requirements:** Python 3.10 or higher, Python's pip 21.0 or higher, setuptools 61.0 or higher
 
@@ -24,6 +26,8 @@ There are two ways to download the code:
 
 
 ## Setup
+
+Before installation, there are a few patch ups in order for the program to be installed correctly.
 
 ### Create a .env file
 This file contains sensitive information and is not uploaded to the main repository by default. The .env file contains the following information:
@@ -106,8 +110,32 @@ cf_crp --help
 
 # For NIMSP
 cf_nimsp --help
-```  
-  
+```
+
+## Configuration
+
+There are settings on this pipeline that requires re-configurations, this will require re-installation of the program.
+
+### Uninstall
+**To uninstall, on the terminal type,**
+
+```bash
+pip3 uninstall cf_etl
+```
+
+### Re-configure .env file
+
+If the information within the .env file changes, such as a change in the database connection info or getting a new NIMSP API Key. 
+
+Reflect changes in the .env file within this folder,
+
+```bash
+src/cf_etl/config/.env
+```
+Create a new .env file if there is none (see 'Setup' for instructions).
+
+After changing .env file, make sure to re-install the program (see 'Installation' for instructions).
+
 </br>
 </br>
 
