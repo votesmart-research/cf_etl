@@ -33,7 +33,7 @@ This file contains sensitive information and is not uploaded to the main reposit
 #### Create a `.env` file within this directory:
 
 ```bash
-src/ -> cf_etl/ -> config/.env
+src/cf_etl/config/.env
 ```
 
 *Make a copy of the `.env.sample` file and remove '.sample' from the extension, and fill in the variables as described in the file.*
