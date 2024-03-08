@@ -27,6 +27,7 @@ There are two ways to download the code:
       ```
       It is better to fork the repository if you are working with another person rather than making changes directly to the main repo.
 </br>
+
 ## Setup
 
 Before installation, there are a few patch ups in order for the program to be installed correctly.
@@ -46,6 +47,7 @@ src/cf_etl/config/.env
 
 *Make a copy of the `.env.sample` file and remove '.sample' from the extension, and fill in the variables as described in the file.*
 </br>
+
 ## Installation
 
 ### Create a Virtual Environment
@@ -77,6 +79,7 @@ Within the top directory of the folder, on the terminal type:
    pip3 install .
    ```
 </br>
+
 ## Usage
 
 Two commands will be available after installation. If package is installed in a virtual environment, be sure to activate it.
