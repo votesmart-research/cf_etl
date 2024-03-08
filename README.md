@@ -26,7 +26,8 @@ There are two ways to download the code:
       git clone git@github.com:votesmart-research/campaign_finance_etl.git
       ```
       It is better to fork the repository if you are working with another person rather than making changes directly to the main repo.
-</br>
+
+
 ## Setup
 
 Before installation, there are a few patch ups in order for the program to be installed correctly.
@@ -45,7 +46,7 @@ src/cf_etl/config/.env
 ```
 
 *Make a copy of the `.env.sample` file and remove '.sample' from the extension, and fill in the variables as described in the file.*
-</br>
+
 
 ## Installation
 
@@ -77,7 +78,7 @@ Within the top directory of the folder, on the terminal type:
    ```bash
    pip3 install .
    ```
-</br>
+
 
 ## Usage
 
