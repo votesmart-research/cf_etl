@@ -152,7 +152,9 @@ def main():
             parser.print_help()
             parser.error("Please specify the filepath of the spreadsheet.")
 
-        df_transformed = pandas.read_csv(args.file, na_values="nan", keep_default_na=False)
+        df_transformed = pandas.read_csv(
+            args.file, na_values="nan", keep_default_na=False
+        )
         records_transformed = df_transformed.to_dict(orient="index")
 
         records_verified, records_queried = match(

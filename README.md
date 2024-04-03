@@ -49,6 +49,7 @@ src/cf_etl/config/.env
 
 
 ## Installation
+If you are a maintaner of this repo, you might want to follow the maintainer's installation guide below.
 
 ### Create a Virtual Environment
 
@@ -78,6 +79,11 @@ Within the top directory of the folder, on the terminal type:
    ```bash
    pip3 install .
    ```
+
+### Installing Postgres
+Psycopg is a dependency of this package. The pure python installation of psycopg in the requirements.txt assumes that libpq (the library for Postgres) is provided system-wide. Using a pure python version of psycopg avoids any conflict that might occur if the user had already install postgres on their system. 
+
+This package may not work if you have not installed postgres, to install postgres use this [link](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads).
 
 
 ## Usage
@@ -139,6 +145,22 @@ src/cf_etl/config/.env
 Create a new .env file if there is none (see 'Setup' for instructions).
 
 After changing .env file, make sure to re-install the program (see 'Installation' for instructions).
+
+
+## Maintenance
+If you are both a user and a maintainer (developer) of this project, there are some guide here that will make your life easier.
+
+### Installing by symlink
+Instead of installing the project (aka copying files), you create a symlink to the project directory (aka creating a shortcut). This will ensure that any changes to the project does not require a re-installation.
+
+To do this, within your project directory type,
+```bash
+pip3 install -e .
+```
+
+### Forking this repository
+Use a fork instead of cloning this repo directly to your local environment. Fork this repo, clone the forked repo to your local environment. That way, if any changes to the project, it will only affect your forked repo, and you can merge with this repo when you are ready. This is to reduce conflict occuring within the main repo, and it can get quite complicated with multiple pull requests. 
+
 
 </br>
 </br>
