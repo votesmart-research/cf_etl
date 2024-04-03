@@ -50,7 +50,7 @@ def save_json(nimsp_json: NIMSPJson, filepath: Path):
 
     filename = (
         f"NIMSP-Extract_page-{current_page}_"
-        f"{last_updated.strftime("%Y-%m-%d-%H%M%S") if last_updated else ''}"
+        f"{last_updated.strftime('%Y-%m-%d-%H%M%S') if last_updated else ''}"
     )
 
     nimsp_json.export(filepath / f"{filename}.json")
