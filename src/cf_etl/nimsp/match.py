@@ -121,8 +121,11 @@ def load_query_string(query_filename):
 
 
 def main(records_transformed: dict, db_connection_info: dict):
+    
+    print("Connecting to database...")
     vsdb_conn = psycopg.connect(**db_connection_info)
-
+    print("Connected.")
+    
     query_election_candidates = load_query_string("election_candidates")
 
     # Remove federal candidates

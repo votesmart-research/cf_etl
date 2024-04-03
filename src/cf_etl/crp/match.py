@@ -134,7 +134,9 @@ def main(
 
     assert election_years != []  # At least one election year is provided
 
+    print("Connecting to database...")
     vsdb_conn = psycopg.connect(**db_connection_info)
+    print("Connected.")
 
     ## Match Candidates
     query_election_candidates = load_query_string("election_candidates")
@@ -163,6 +165,7 @@ def main(
         finsource_ids=["1"],
         finsource_codes=[str(row["CID"]) for row in records_matched.values()],
     )
+    print("Done.")
 
     print("Querying finsource_candidates...")
     records_finsource_fec = query_as_records(
@@ -171,6 +174,7 @@ def main(
         finsource_ids=["2"],
         finsource_codes=[str(row["FECCandID"]) for row in records_matched.values()],
     )
+    print("Done.")
 
     records_verified_crp = verify(records_matched, records_finsource_crp, "CID")
     records_verified_fec = verify(

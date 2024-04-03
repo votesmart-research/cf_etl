@@ -113,6 +113,8 @@ def main(records_extracted: dict[int, dict[str, str]]) -> dict[int, dict[str, st
     df_transformed.replace(VALUES_TO_REPLACE, inplace=True)
     df_transformed.rename(columns=COLUMNS_TO_RENAME, inplace=True)
 
-    records_transformed = df_transformed.to_dict(orient="index")
+    records_transformed = (
+        df_transformed.astype(str).replace("nan", "").to_dict(orient="index")
+    )
 
     return records_transformed
