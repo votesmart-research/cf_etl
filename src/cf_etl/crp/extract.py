@@ -16,7 +16,7 @@ def main(crp_file: Path) -> dict[int, dict[str, str]]:
     df_extracted = df_crp.iloc[STARTING_ROW:, STARTING_COLUMN:].reset_index(drop=True)
     df_extracted.rename(df_crp.iloc[STARTING_ROW - 1], axis="columns", inplace=True)
 
-    df_extracted.replace(numpy.NAN, "", inplace=True)
+    df_extracted.replace(numpy.nan, "", inplace=True)
 
     records_extracted = df_extracted.to_dict(orient="index")
 

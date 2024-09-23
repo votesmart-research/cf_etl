@@ -1,15 +1,17 @@
 from pathlib import Path
+from collections import defaultdict
 
 # External Libraries and Packages
 import psycopg
+
+from psycopg import ClientCursor
 from rapidfuzz import fuzz
 from tqdm import tqdm
-from record_matcher import records
 from record_matcher.matcher import RecordMatcher
 
 
 def match(
-    records_crp: dict[int, dict[str, str]],
+    records_transformed: dict[int, dict[str, str]],
     records_ec: dict[int, dict[str, str]],
 ):
     """Configures the matching program and matches nimsp candidates with Vote
@@ -18,11 +20,11 @@ def match(
     rc_matcher = RecordMatcher()
     rc_config = rc_matcher.config
 
-    rc_matcher.x_records = records_crp
+    rc_matcher.x_records = records_transformed
     rc_matcher.y_records = records_ec
 
     rc_config.scorers_by_column.SCORERS.update(
-        {"WRatio": lambda x, y: fuzz.WRatio(str(x), str(y))}
+        {"WRatio": lambda x, y: fuzz.WRatio(str(x).lower(), str(y).lower())}
     )
     rc_config.scorers_by_column.default = "WRatio"
     rc_config.thresholds_by_column.default = 85
@@ -44,8 +46,7 @@ def match(
     rc_matcher.required_threshold = 85
     rc_matcher.duplicate_threshold = 3
 
-    p_bar = tqdm(total=len(records_crp))
-
+    p_bar = tqdm(total=len(records_transformed), desc="Matching...")
     matched_records, match_info = rc_matcher.match(update_func=lambda: p_bar.update(1))
 
     # Prints match results
@@ -67,32 +68,29 @@ def verify(
     n_col_name = f"Entered for {col_name}?"
     records_verified = records_matched.copy()
 
+    code_to_candidates = defaultdict(list)
+
+    for row in records_finsource.values():
+        code = str(row["code"]).strip()
+        candidate_id = str(row["candidate_id"]).strip()
+        code_to_candidates[code].append(candidate_id)
+
     for row_i in records_verified.values():
 
-        entered = []
-        other_entries = []
+        code = str(row_i[col_name]).strip()
+        candidate_id = str(row_i["candidate_id"]).strip()
 
-        for row_j in records.group_by(
-            records_finsource, {"code": str(row_i[col_name])}
-        ).values():
+        if code in code_to_candidates.keys():
+            candidate_ids = code_to_candidates[code]
 
-            if str(row_i["candidate_id"]) == str(row_j["candidate_id"]):
-                entered.append(str(row_j["candidate_id"]))
+            entered = [cid for cid in candidate_ids if cid == candidate_id]
+            other_entries = [cid for cid in candidate_ids if cid != candidate_id]
+
+            if entered and not other_entries:
+                row_i[n_col_name] = "YES"
 
             else:
-                if not str(row_i["candidate_id"]):
-                    continue
-                else:
-                    other_entries.append(str(row_j["candidate_id"]))
-
-        if entered and not other_entries:
-            row_i[n_col_name] = "YES"
-
-        elif not entered and other_entries:
-            row_i[n_col_name] = f"Entered for {', '.join(other_entries)}"
-
-        elif entered and other_entries:
-            row_i[n_col_name] = f"Entered for {', '.join(entered + other_entries)}"
+                row_i[n_col_name] = f"Entered for {', '.join(entered + other_entries)}"
 
         else:
             row_i[n_col_name] = "NO"
@@ -103,6 +101,7 @@ def verify(
 def query_as_records(query: str, connection, **params) -> dict[str, str]:
     """Converts query results into records"""
     cursor = connection.cursor()
+    # print(cursor.mogrify(query, params))
     cursor.execute(query, params)
     headers = [str(k[0]) for k in cursor.description]
     return {
@@ -135,7 +134,7 @@ def main(
     assert election_years != []  # At least one election year is provided
 
     print("Connecting to database...")
-    vsdb_conn = psycopg.connect(**db_connection_info)
+    vsdb_conn = psycopg.connect(**db_connection_info, cursor_factory=ClientCursor)
     print("Connected.")
 
     ## Match Candidates
@@ -163,7 +162,9 @@ def main(
         query_finsource_candidates,
         vsdb_conn,
         finsource_ids=["1"],
-        finsource_codes=[str(row["CID"]) for row in records_matched.values()],
+        finsource_codes=[
+            f'%{row["CID"].strip()}%' for row in records_matched.values() if row["CID"]
+        ],
     )
     print("Done.")
 
@@ -172,7 +173,11 @@ def main(
         query_finsource_candidates,
         vsdb_conn,
         finsource_ids=["2"],
-        finsource_codes=[str(row["FECCandID"]) for row in records_matched.values()],
+        finsource_codes=[
+            f'%{row["FECCandID"].strip()}%'
+            for row in records_matched.values()
+            if row["FECCandID"]
+        ],
     )
     print("Done.")
 

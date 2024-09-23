@@ -98,7 +98,7 @@ class NIMSPApi:
             response = requests.get(url)
 
         except:
-            return {}, {}
+            return NIMSPJson({}), {}
 
         active_params = self.get_active_params(response.url)
 
@@ -108,7 +108,7 @@ class NIMSPApi:
             return NIMSPJson(data), active_params
 
         except json.decoder.JSONDecodeError:
-            return NIMSPJson(dict({})), active_params
+            return NIMSPJson({}), active_params
 
 
 class JSONObject:
